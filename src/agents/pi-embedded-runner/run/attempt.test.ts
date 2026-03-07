@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../../config/config.js";
 import {
@@ -13,6 +16,8 @@ import {
   wrapOllamaCompatNumCtx,
   wrapStreamFnTrimToolCallNames,
 } from "./attempt.js";
+
+const RUNNER_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 function createOllamaProviderConfig(injectNumCtxForOpenAICompat: boolean): OpenClawConfig {
   return {
@@ -350,6 +355,18 @@ describe("wrapStreamFnTrimToolCallNames", () => {
 
     expect(finalToolCall.name).toBe("read");
     expect(finalToolCall.id).toBe("call_42");
+  });
+});
+
+describe("embedded runner cwd isolation", () => {
+  it("does not change process cwd in run attempt path", async () => {
+    const source = await readFile(path.join(RUNNER_DIR, "attempt.ts"), "utf8");
+    expect(source).not.toContain("process.chdir(");
+  });
+
+  it("does not change process cwd in compaction path", async () => {
+    const source = await readFile(path.resolve(RUNNER_DIR, "../compact.ts"), "utf8");
+    expect(source).not.toContain("process.chdir(");
   });
 });
 
