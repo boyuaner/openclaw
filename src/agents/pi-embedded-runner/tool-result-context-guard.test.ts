@@ -268,4 +268,27 @@ describe("installToolResultContextGuard", () => {
     expect(oldResult.details).toBeUndefined();
     expect(newResult.details).toBeUndefined();
   });
+
+  it("handles malformed text blocks in tool results without throwing", async () => {
+    const agent = makeGuardableAgent();
+
+    installToolResultContextGuard({
+      agent,
+      contextWindowTokens: 1_000,
+    });
+
+    const malformedToolResult = castAgentMessage({
+      role: "toolResult",
+      toolCallId: "call_bad",
+      toolName: "read",
+      content: [{ type: "text", text: { raw: "not-a-string" } }],
+      isError: false,
+      timestamp: Date.now(),
+    });
+
+    const contextForNextCall = [makeUser("u".repeat(2_200)), malformedToolResult];
+    await expect(
+      agent.transformContext?.(contextForNextCall, new AbortController().signal),
+    ).resolves.toBeDefined();
+  });
 });
