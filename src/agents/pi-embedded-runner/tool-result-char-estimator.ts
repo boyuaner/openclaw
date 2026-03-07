@@ -7,7 +7,11 @@ const IMAGE_CHAR_ESTIMATE = 8_000;
 export type MessageCharEstimateCache = WeakMap<AgentMessage, number>;
 
 function isTextBlock(block: unknown): block is { type: "text"; text: string } {
-  return !!block && typeof block === "object" && (block as { type?: unknown }).type === "text";
+  if (!block || typeof block !== "object") {
+    return false;
+  }
+  const typed = block as { type?: unknown; text?: unknown };
+  return typed.type === "text" && typeof typed.text === "string";
 }
 
 function isImageBlock(block: unknown): boolean {
